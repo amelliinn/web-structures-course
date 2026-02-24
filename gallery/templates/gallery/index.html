@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Storage</title>
+    
+    <!-- ВАЖНО: ЭТО КАРТА, УКАЗЫВАЮЩАЯ БРАУЗЕРУ, ГДЕ БРАТЬ БИБЛИОТЕКИ -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="{% static 'gallery/style.css' %}">
+</head>
+
+<body>
+    <header>
+        <h1>{{ page_title }}</h1>
+        <!-- Ссылка на загрузку теперь выглядит как кнопка -->
+        <a href="{% url 'upload' %}" class="btn" style="background-color: #28a745;">+ Загрузить модель</a>
+    </header>
+    
+    <main>
+        <!-- Контейнер сетки -->
+        <div class="gallery-grid">
+            {% for asset in assets %}
+                <!-- Карточка -->
+                <div class="asset-card">
+                    <!-- 1. Превью (Верхняя часть) -->
+                    <div class="card-preview"
+                         id="model-container-{{ asset.id }}"
+                         data-url="{{ asset.file.url }}">
+                        👁️👅👁️
+                    </div>
+                    <!-- 2. Информация (Нижняя часть) -->
+                    <div class="card-info">
+                        <h3 class="card-title">{{ asset.title }}</h3>
+                        <div class="card-meta">
+                            <span>📅 {{ asset.created_at|date:"d M Y" }}</span>
+                            {% if asset.file %}
+                                <span style="float: right;">💾 {{ asset.file.size|filesizeformat }}</span>
+                            {% endif %}
+                        </div>
+                        {% if asset.file %}
+                            <a href="{{ asset.file.url }}" class="btn" download>Скачать.glb</a>
+                        {% else %}
+                            <span style="color: red;">Файл потерян</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p>База пуста.</p>
+            {% endfor %}
+        </div>
+    </main>
+    
+        <!-- Подключение скрипта модуля -->
+         <script type="module">
+        import { loadModel } from "{% static 'gallery/js/viewer.js' %}";
+
+        // Находим все карточки с моделями
+        const containers = document.querySelectorAll('.card-preview');
+
+        // Пробегаемся по каждой
+        containers.forEach(container => {
+            const id = container.id; // Например: "model-container-5"
+            const url = container.dataset.url; // Например: "/media/3d_assets/chair.glb"
+            
+            // Если URL есть (файл существует) - запускаем viewer
+            if (url) {
+                loadModel(id, url);
+            }
+        });
+    </script>
+</body>
+</html>
