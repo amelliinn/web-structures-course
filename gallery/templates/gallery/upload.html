@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <title>Загрузка модели</title>
@@ -11,17 +12,25 @@
             margin: 2rem auto;
             padding: 0 1rem;
         }
+
         .form-group {
             margin-bottom: 1rem;
         }
+
         button {
             padding: 10px 20px;
             cursor: pointer;
         }
-        /* ДОБАВЬТЕ ЭТОТ СТИЛЬ ДЛЯ ОШИБОК */
-    
+
+        /* Стиль для заблокированной кнопки */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Стиль для ошибок */
         .errorlist {
-            color: #ff69b4; 
+            color: #ff69b4;
             list-style: none;
             padding: 0;
             margin: 10px 0;
@@ -29,8 +38,10 @@
         }
     </style>
 </head>
+
 <body>
     <h1>Загрузить новую 3D модель</h1>
+
     <!--
     1. method="post": чтобы отправить данные.
     2. enctype="multipart/form-data": ОБЯЗАТЕЛЬНО для файлов!
@@ -38,14 +49,47 @@
     <form method="post" enctype="multipart/form-data">
         <!-- Защита от хакеров -->
         {% csrf_token %}
+
         <!-- Django сам нарисует label и input для всех полей -->
         <div class="form-group">
             {{ form.as_p }}
         </div>
-        <button type="submit">Загрузить в базу</button>
+
+        <!-- НОВЫЙ БЛОК: Превью модели -->
+        <div style="margin-bottom: 20px;">
+            <p>Авто-генерация превью:</p>
+
+            <!-- Контейнер, куда Three.js отрендерит модель -->
+            <div id="preview-container" style="width: 300px; height: 200px; background: #eee; border: 1px solid #ccc;">
+                <span style="display: block; padding: 80px 0; text-align: center; color: #999;">
+                    Выберите файл...
+                </span>
+            </div>
+
+            <!-- СКРЫТОЕ ПОЛЕ: сюда JS запишет base64 строку изображения -->
+            <input type="hidden" name="image_data" id="id_image_data">
+        </div>
+
+        <!-- ЕДИНСТВЕННАЯ кнопка отправки (изначально заблокирована) -->
+        <button type="submit" id="submit-btn" disabled>Загрузить в базу</button>
     </form>
-    
+
     <br>
     <a href="{% url 'home' %}">← Назад в галерею</a>
+
+    <!-- Подключаем скрипт с Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- Загружаем наш модуль авто-генерации -->
+    {% load static %}
+    <script type="module" src="{% static 'gallery/js/autothumb.js' %}"></script>
 </body>
+
 </html>

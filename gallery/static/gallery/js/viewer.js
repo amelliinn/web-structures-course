@@ -8,23 +8,34 @@ export function loadModel(containerId, modelUrl) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    container.style.backgroundImage = 'none'; 
+
     // 1. Сцена
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5); // Светло-серый фон
+    scene.background = null; // 
 
     // 2. Камера
     const camera = new THREE.PerspectiveCamera(
-        45, 
-        container.clientWidth / container.clientHeight, 
-        0.1, 
+        45,
+        container.clientWidth / container.clientHeight,
+        0.1,
         1000
     );
 
     // 3. Рендерер
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.outputColorSpace = THREE.SRGBColorSpace; // ВАЖНО для GLTF!
+
+    // --- ВАЖНЫЕ НАСТРОЙКИ ЦВЕТА ---
+    // 1. Говорим, что текстуры и свет должны быть конвертированы под монитор
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    // 2. Включаем Tone Mapping (как в кино)
+    // ACESFilmic - это стандарт индустрии (Unreal Engine использует его же)
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    // 3. Настраиваем экспозицию (яркость)
+    renderer.toneMappingExposure = 1.0;
 
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
@@ -40,21 +51,52 @@ export function loadModel(containerId, modelUrl) {
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     scene.environment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
 
+    // --- 1. Генерируем HTML лоадера программно ---
+    const loaderDiv = document.createElement('div');
+    loaderDiv.className = 'loader-overlay';
+    loaderDiv.innerHTML = `
+        <div style="color: #666; font-size: 0.9rem;">Loading...</div>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+    `;
+    container.appendChild(loaderDiv);
+
+    // Находим полоску, чтобы менять её ширину
+    const progressFill = loaderDiv.querySelector('.progress-fill');
+
     // 6. Загрузка модели
     const loader = new GLTFLoader();
     let loadedModel = null;
 
     loader.load(
         modelUrl,
+        // A. ON LOAD (Успех)
         (gltf) => {
-            loadedModel = gltf.scene;
-            fitCameraToObject(camera, loadedModel, controls);
-            scene.add(loadedModel);
+            const model = gltf.scene;
+            fitCameraToObject(camera, model, controls);
+            scene.add(model);
+
+            // Скрываем лоадер
+            loaderDiv.style.opacity = '0';
+            setTimeout(() => {
+                loaderDiv.remove(); // Удаляем из DOM через 0.3 сек
+            }, 300);
         },
-        undefined,
+        // B. ON PROGRESS (Прогресс)
+        (xhr) => {
+            // xhr.total - общий вес файла в байтах
+            // xhr.loaded - сколько скачалось
+            if (xhr.total > 0) {
+                const percent = (xhr.loaded / xhr.total) * 100;
+                progressFill.style.width = percent + '%';
+            }
+        },
+        // C. ON ERROR (Ошибка)
         (error) => {
             console.error('Ошибка загрузки:', error);
-            container.innerHTML = '❌ Error';
+            loaderDiv.innerHTML = `<div class="error-msg">❌ Ошибка загрузки<br>
+                <small>Проверьте файл</small></div>`;
         }
     );
 
@@ -91,13 +133,13 @@ function fitCameraToObject(camera, object, controls) {
     // Ставим камеру
     const fov = camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
-    
+
     camera.position.set(cameraZ, cameraZ * 0.5, cameraZ);
     camera.lookAt(0, 0, 0);
 
     // ВАЖНО: Обновляем цель контроллера, чтобы вращение было вокруг центра модели
     controls.target.set(0, 0, 0);
     controls.update();
-    
+
     camera.updateProjectionMatrix();
 }
