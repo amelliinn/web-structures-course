@@ -1,11 +1,15 @@
 """
 URL configuration for config project.
 """
+"""
+URL configuration for config project.
+"""
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, re_path
 from gallery.views import home, about, upload
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -14,5 +18,13 @@ urlpatterns = [
     path('upload/', upload, name='upload'),
 ]
 
-# Добавляем маршруты для медиа-файлов (работает при любом DEBUG)
+# Добавляем маршруты для статики (через WhiteNoise - уже работает)
+# Добавляем маршруты для медиа-файлов (чтобы работали при DEBUG=False)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Дополнительный надежный маршрут для медиа-файлов
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
+]
