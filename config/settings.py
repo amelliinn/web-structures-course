@@ -22,7 +22,8 @@ DEBUG = os.getenv('DEBUG') == 'True'
 
 # Разрешенные хосты. В продакшене здесь будет имя сайта.
 # Звездочка * разрешает всем (пока оставим так для простоты)
-ALLOWED_HOSTS = ['*']  # Убрал дубликат
+# Читаем из .env и преобразуем в список
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
 
 
 # Application definition

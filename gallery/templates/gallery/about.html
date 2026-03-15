@@ -3,23 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <title>О проекте - 3D Storage</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'gallery/style.css' %}">
 </head>
 <body>
-    <header>
-        <h1>О проекте</h1>
-        <nav>
-            <a href="/">Главная</a> |
-            <a href="/about/">О нас</a>
+    <div class="page-container">
+        <!-- Навигация -->
+        <nav class="main-nav">
+            <a href="{% url 'home' %}">🏯 Главная</a> ♡
+            <a href="{% url 'about' %}" class="active">📃 О проекте</a>
         </nav>
-    </header>
-    
-    <main>
-        <h2>3D Хранилище</h2>
-        <p><strong>Создатель:</strong> Андреева Н.К.</p>
-    </main>
-    
-    <footer>
-        <p>&copy; 2026 Web Structures Course</p>
-    </footer>
+        
+        <!-- Основной контент -->
+        <main class="content-card">
+            <h1>🌐 3D Хранилище</h1>
+            <hr>
+            <p><strong>Группа:</strong> ТТМ-22</p>
+            <p><strong>Создатель:</strong> Андреева Н.К.</p>
+            <p><strong>Год:</strong> 2026</p>
+            
+            <p>Сервис для хранения и просмотра 3D-моделей.</p>
+            <hr>
+            <div class="footer-text">
+                <p>&copy; 2026 Web Structures Course</p>
+            </div>
+            
+            <div class="text-center mt-30">
+                <a href="{% url 'home' %}" class="btn btn-gray">← Назад</a>
+            </div>
+        </main>
+    </div>
 </body>
 </html>

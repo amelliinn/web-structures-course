@@ -24,7 +24,11 @@ def home(request):
 
     # 4. Фильтр по дням (если указан)
     if days:
-        assets = assets.filter(created_at__gte=timezone.now() - timedelta(days=int(days)))
+        try:
+            assets = assets.filter(created_at__gte=timezone.now() - timedelta(days=int(days)))
+        except ValueError:
+            # Если days не число, просто игнорируем фильтр
+            pass
 
     # 5. Применяем сортировку
     if ordering == 'old':
@@ -36,13 +40,13 @@ def home(request):
         assets = assets.order_by('-created_at')
 
     # 6. ПАГИНАЦИЯ
-    paginator = Paginator(assets, 8)
+    paginator = Paginator(assets, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     # 7. Отдаем результат
     context_data = {
-        'page_title': 'Главная Галерея',
+        'page_title': '♡ Главная Галерея 3D Моделей ♡',
         'page_obj': page_obj,
         'search_query': search_query,
         'ordering': ordering,
@@ -65,30 +69,37 @@ def upload(request):
             # 1. Создаем объект, но пока НЕ сохраняем в базу (commit=False)
             new_asset = form.save(commit=False)
             
-            # 2. Обрабатываем картинку из скрытого поля
+            # 2. Обрабатываем картинку из скрытого поля (с безопасной проверкой)
             image_data = request.POST.get('image_data')
-            if image_data:
-                # Формат строки: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
-                format, imgstr = image_data.split(';base64,')
-                ext = format.split('/')[-1]  # получаем "jpeg"
-                
-                # Декодируем текст в байты
-                data = base64.b64decode(imgstr)
-                
-                # Создаем безопасное имя файла (очищаем от спецсимволов)
-                safe_title = "".join(x for x in new_asset.title if x.isalnum() or x in [' ', '-', '_'])[:50]
-                file_name = f"{safe_title}_thumb.{ext}"
-                
-                # Сохраняем байты в поле image
-                new_asset.image.save(file_name, ContentFile(data), save=False)
+            if image_data and ';base64,' in image_data:
+                try:
+                    # Формат строки: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+                    format, imgstr = image_data.split(';base64,')
+                    ext = format.split('/')[-1]  # получаем "jpeg"
+                    
+                    # Декодируем текст в байты
+                    data = base64.b64decode(imgstr)
+                    
+                    # Создаем безопасное имя файла (очищаем от спецсимволов)
+                    safe_title = "".join(x for x in new_asset.title if x.isalnum() or x in [' ', '-', '_'])[:50]
+                    file_name = f"{safe_title}_thumb.{ext}"
+                    
+                    # Сохраняем байты в поле image
+                    new_asset.image.save(file_name, ContentFile(data), save=False)
+                except (ValueError, IndexError, base64.binascii.Error):
+                    # Если что-то пошло не так с декодированием, просто игнорируем изображение
+                    messages.warning(request, 'Не удалось создать превью, но модель загружена.')
             
             # 3. Финальное сохранение в БД
             new_asset.save()
             
-            # ✅ ДОБАВЛЯЕМ СООБЩЕНИЕ ОБ УСПЕХЕ
+            # ✅ СООБЩЕНИЕ ОБ УСПЕХЕ
             messages.success(request, f'Модель "{new_asset.title}" успешно загружена!')
             
             return redirect('home')
+        else:
+            # Если форма невалидна, показываем ошибки
+            messages.error(request, 'Ошибка в форме. Проверьте данные.')
     else:
         form = AssetForm()
     

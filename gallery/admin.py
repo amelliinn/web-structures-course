@@ -1,10 +1,9 @@
 from django.contrib import admin
-from .models import Asset  # импортируем наш класс
+from .models import Asset
 
-# Используем декоратор @admin.register
 @admin.register(Asset)
 class AssetAdmin(admin.ModelAdmin):
-# Какие поля показывать в таблице (колонки)
+    # Какие поля показывать в таблице (колонки)
     list_display = ('title', 'created_at', 'id')
     # Добавляем строку поиска (поиск по названию)
     search_fields = ('title',)

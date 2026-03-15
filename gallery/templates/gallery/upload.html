@@ -3,81 +3,146 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Загрузка модели</title>
-    <!-- Простой CSS для наглядности (пока без внешних файлов) -->
+    <title>Загрузка модели - 3D Storage</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'gallery/style.css' %}">
+    
+    <!-- Дополнительные стили для точной настройки превью -->
     <style>
-        body {
-            font-family: sans-serif;
-            max-width: 600px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+        /* Центрируем контейнер с превью */
+        .preview-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
         }
-
-        .form-group {
-            margin-bottom: 1rem;
+        
+        /* Фиксированный размер 300x200 как в методичке */
+        #preview-container {
+            width: 300px;
+            height: 200px;
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            margin: 10px auto;
         }
-
-        button {
-            padding: 10px 20px;
-            cursor: pointer;
+        
+        /* Стили для сообщения внутри превью */
+        #preview-container .placeholder {
+            display: block;
+            padding: 80px 0;
+            text-align: center;
+            color: #999;
+            line-height: 1.4;
         }
-
-        /* Стиль для заблокированной кнопки */
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        
+        /* Адаптация для мобильных */
+        @media (max-width: 400px) {
+            #preview-container {
+                width: 260px;
+                height: 173px; /* Сохраняем пропорции */
+            }
+            
+            #preview-container .placeholder {
+                padding: 65px 0;
+                font-size: 0.9rem;
+            }
         }
-
-        /* Стиль для ошибок */
-        .errorlist {
-            color: #ff69b4;
-            list-style: none;
-            padding: 0;
-            margin: 10px 0;
-            font-weight: lighter;
+        
+        /* Подсказка по центру */
+        .hint {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 
 <body>
-    <h1>Загрузить новую 3D модель</h1>
+    <div class="page-container">
+        <!-- Навигация -->
+        <nav class="main-nav">
+            <a href="{% url 'home' %}">🏯 Главная</a> ♡
+            <a href="{% url 'about' %}">📃 О проекте</a> ♡
+            <a href="{% url 'upload' %}" class="active">📥 Загрузка</a>
+        </nav>
 
-    <!--
-    1. method="post": чтобы отправить данные.
-    2. enctype="multipart/form-data": ОБЯЗАТЕЛЬНО для файлов!
-    -->
-    <form method="post" enctype="multipart/form-data">
-        <!-- Защита от хакеров -->
-        {% csrf_token %}
-
-        <!-- Django сам нарисует label и input для всех полей -->
-        <div class="form-group">
-            {{ form.as_p }}
-        </div>
-
-        <!-- НОВЫЙ БЛОК: Превью модели -->
-        <div style="margin-bottom: 20px;">
-            <p>Авто-генерация превью:</p>
-
-            <!-- Контейнер, куда Three.js отрендерит модель -->
-            <div id="preview-container" style="width: 300px; height: 200px; background: #eee; border: 1px solid #ccc;">
-                <span style="display: block; padding: 80px 0; text-align: center; color: #999;">
-                    Выберите файл...
-                </span>
+        <!-- Блок уведомлений -->
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="alert {{ message.tags }}">
+                {{ message }}
             </div>
-
-            <!-- СКРЫТОЕ ПОЛЕ: сюда JS запишет base64 строку изображения -->
-            <input type="hidden" name="image_data" id="id_image_data">
+            {% endfor %}
         </div>
 
-        <!-- ЕДИНСТВЕННАЯ кнопка отправки (изначально заблокирована) -->
-        <button type="submit" id="submit-btn" disabled>Загрузить в базу</button>
-    </form>
+        <script>
+            setTimeout(function() {
+                const messages = document.querySelectorAll('.alert');
+                messages.forEach(function(message) {
+                    message.style.transition = 'opacity 0.5s ease-out';
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        if (message.parentElement) {
+                            message.remove();
+                        }
+                        const container = document.querySelector('.messages-container');
+                        if (container && container.children.length === 0) {
+                            container.remove();
+                        }
+                    }, 500);
+                });
+            }, 3000);
+        </script>
+        {% endif %}
 
-    <br>
-    <a href="{% url 'home' %}">← Назад в галерею</a>
+        <!-- Основной контент -->
+        <main class="content-card">
+            <h1 class="text-center">📥 Загрузка 3D модели</h1>
+            
+            <hr>
+            
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Поля формы -->
+                <div class="form-group">
+                    {{ form.as_p }}
+                </div>
+                
+                <!-- Блок превью модели 300x200 -->
+                <div class="preview-wrapper">
+                    
+                    <div id="preview-container">
+                        <span class="placeholder">Выберите файл...</span>
+                    </div>
+                    
+                    <!-- Скрытое поле для base64 изображения -->
+                    <input type="hidden" name="image_data" id="id_image_data">
+                </div>
+                
+                <hr>
+                
+                <!-- Кнопки -->
+                <div class="form-actions">
+                    <button type="submit" id="submit-btn" class="btn btn-green" disabled>
+                        Загрузить
+                    </button>
+                    
+                    <a href="{% url 'home' %}" class="btn btn-gray">
+                        ← Отмена
+                    </a>
+                </div>
+            </form>
+        </main>
+    </div>
 
-    <!-- Подключаем скрипт с Three.js -->
+    <!-- Карта импортов для Three.js -->
     <script type="importmap">
         {
             "imports": {
@@ -87,8 +152,7 @@
         }
     </script>
 
-    <!-- Загружаем наш модуль авто-генерации -->
-    {% load static %}
+    <!-- Скрипт авто-генерации превью -->
     <script type="module" src="{% static 'gallery/js/autothumb.js' %}"></script>
 </body>
 

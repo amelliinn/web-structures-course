@@ -22,7 +22,7 @@
 </head>
 
 <body>
-    <!-- Блок уведомлений -->
+    <!-- Блок уведомлений с авто-скрытием -->
     {% if messages %}
     <div class="messages-container">
         {% for message in messages %}
@@ -31,20 +31,42 @@
         </div>
         {% endfor %}
     </div>
-    {% endif %}
-    {% if messages %}
-        <div class="messages-container">
-            {% for message in messages %}
-                 <!-- message.tags добавит класс 'success', 'error' или 'warning' -->
-                 <div class="alert {{ message.tags }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
+
+    <script>
+        // Автоматическое скрытие сообщений через 3 секунды
+        setTimeout(function() {
+            const messages = document.querySelectorAll('.alert');
+            messages.forEach(function(message) {
+                // Плавное исчезновение
+                message.style.transition = 'opacity 0.5s ease-out';
+                message.style.opacity = '0';
+                
+                // Удаление из DOM после завершения анимации
+                setTimeout(function() {
+                    if (message.parentElement) {
+                        message.remove();
+                    }
+                    
+                    // Если контейнер сообщений пуст, удаляем и его
+                    const container = document.querySelector('.messages-container');
+                    if (container && container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 500);
+            });
+        }, 3000);
+    </script>
     {% endif %}
 
     <header>
+        
         <h1>{{ page_title }}</h1>
+         <!-- Кнопка "О нас" по центру внизу -->
+        <h3>
+            <a href="{% url 'home' %}">🏯Главная</a> ♡
+            <a href="{% url 'about' %}" class="active">📃 О проекте</a>
+        <h3>
+        
         <a href="{% url 'upload' %}" class="btn" style="background-color: #28a745">
             + Загрузить модель
         </a>
@@ -58,7 +80,7 @@
             <input type="text" name="q" class="search-input" placeholder="Найти 3D модель..."
                 value="{{ request.GET.q|default:'' }}" />
 
-            <!-- Сортировка - ИСПРАВЛЕНО: добавил пробелы вокруг == -->
+            <!-- Сортировка -->
             <select name="ordering" class="sort-select" onchange="this.form.submit()">
                 <option value="new" {% if request.GET.ordering == 'new' or not request.GET.ordering %}selected{% endif %}>
                     Сначала новые
@@ -72,7 +94,7 @@
             </select>
 
             <!-- Фильтр "За сегодня" -->
-            <a href="?days=1" class="btn" style="background-color: #f15dcc">
+            <a href="?days=1" class="btn" style="background-color: #ff3879">
                 Только за сегодня
             </a>
 
@@ -183,7 +205,11 @@
             </div>
         </div>
         {% endif %}
+       
+
+       
     </main>
+    
 
     <!-- Скрипт для 3D просмотра -->
     <script type="module">
